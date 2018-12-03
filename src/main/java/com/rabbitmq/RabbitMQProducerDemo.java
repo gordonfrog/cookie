@@ -10,6 +10,8 @@ import util.KryoUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,10 +21,21 @@ public class RabbitMQProducerDemo {
     private final static String QUEUE_NAME = "sync-message";
     //private final static String EXCHANGE_NAME = "exchange-hello";
 
-    private static String fileName= "C:\\Users\\Administrator\\Desktop\\Postman6.1.4";
+    private static String fileName= "C:\\Users\\Administrator\\Desktop\\ZXXK20064271713256016";
     //private static String fileName= "C:\\Users\\Administrator\\Desktop\\BaiduNetdisk-6.2.4";
-    private static String fileExt = ".rar";
+    private static String fileExt = ".avi";
+
+    private AMQP.BasicProperties.Builder properties;
+
+    private ByteBuffer bbuf;
+
+    private int bufferLength = 1024;
+
+    private Channel channel;
+
+
     public static void main(String[] args)throws Exception{
+
 
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -30,8 +43,33 @@ public class RabbitMQProducerDemo {
         //factory.setPassword("mengday");
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
+
         Map<String,Object> paraMap = new HashMap<String,Object>();
         paraMap.put("x-queue-mode","lazy");
+
+        channel.queueDeclare(QUEUE_NAME, true, false, false, paraMap);
+        RabbitMQProducerDemo rabbitMQProducerDemo = new RabbitMQProducerDemo(channel);
+
+        boolean bool = true;
+        while(bool){
+            rabbitMQProducerDemo.startDemo();
+            Thread.sleep(30*1000);
+        }
+        channel.close();
+        connection.close();
+    }
+
+    public RabbitMQProducerDemo(Channel channel){
+        // 设置消息是否持久化，1： 非持久化 2：持久化
+        this.properties =  new AMQP.BasicProperties().builder();
+        properties.deliveryMode(2);
+        this.bbuf = ByteBuffer.allocate(bufferLength*bufferLength);
+        this.channel = channel;
+    }
+
+    public void startDemo() throws Exception{
+
+
 
         // 声明一个接收被删除的消息的交换机和队列
         //Dead letter exchange(死亡交换机) 和 Dead letter routing key(死亡路由键)
@@ -49,6 +87,7 @@ public class RabbitMQProducerDemo {
         //String QUEUE_NAME = "queue_name";
         //channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.FANOUT);
 
+        /*
         Map<String, Object> arguments = new HashMap<String, Object>();
         //消息剩余生存时间
         arguments.put("x-message-ttl", 15000);
@@ -67,7 +106,7 @@ public class RabbitMQProducerDemo {
         // 设置消息的优先级，优先级大的优先被消费
         arguments.put("x-max-priority", 10);
         Object put = arguments.put("x-dead-letter-routing-key", "routingkey.dead");
-
+        */
 
         /**
          * 队列持久化
@@ -76,44 +115,44 @@ public class RabbitMQProducerDemo {
          * autoDelete 是否自动删除 当最后一个消费者断开连接之后队列是否自动被删除，可以通过RabbitMQ Management，查看某个队列的消费者数量，当consumers = 0时队列就会自动删除
          * arguments
          */
-        channel.queueDeclare(QUEUE_NAME, true, false, false, paraMap);
-
-        //String message = "Hello World!";
 
         boolean doSuccess = true;
+        RandomAccessFile randomAccessFile = null;
+        FileChannel fc = null;
+        ByteArrayOutputStream out = null;
+        //while(doSuccess){
 
-        while(doSuccess){
+        FileMessage fileMessage = new FileMessage();
+        //设置文件生成路径以及名称
+        fileMessage.setFileName("C:\\Users\\Administrator\\Desktop\\"+System.nanoTime()+fileExt);
 
-            FileMessage fileMessage = new FileMessage();
-            //设置文件生成路径以及名称
-            fileMessage.setFileName("C:\\Users\\Administrator\\Desktop\\"+System.nanoTime()+fileExt);
-            byte[] b = new byte[1024];
-            int n = 0;
-            RandomAccessFile randomAccessFile = new RandomAccessFile(new File(fileName+fileExt),"r");
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            while((n=randomAccessFile.read(b))!=-1){
-                out.write(b);
-            }
-            //设置文件字节流
-            fileMessage.setFileByte(out.toByteArray());
-            AMQP.BasicProperties.Builder properties = new AMQP.BasicProperties().builder();
-            // 设置消息是否持久化，1： 非持久化 2：持久化
-            properties.deliveryMode(2);
-
-            channel.basicPublish("", QUEUE_NAME, properties.build(), KryoUtil.doSerializable(fileMessage));
-            //System.out.println(" [x] Sent '" + message + "'");
-
-            randomAccessFile.close();
-            out.close();
-
-            System.out.println("发送完毕:"+new Date());
-
-
-            Thread.sleep(30*1000);
+        int n = 0;
+        randomAccessFile = new RandomAccessFile(new File(fileName+fileExt),"r");
+        fc  = randomAccessFile.getChannel();
+        out = new ByteArrayOutputStream();
+        while((n=fc.read(bbuf))!=-1){
+            out.write(bbuf.array(),0,n);
+            bbuf.clear();
         }
+        //设置文件字节流
+        fileMessage.setFileByte(out.toByteArray());
+        channel.basicPublish("", QUEUE_NAME, properties.build(), KryoUtil.doSerializable(fileMessage));
+        //System.out.println(" [x] Sent '" + message + "'");
+
+        out.close();
+        fc.close();
+        randomAccessFile.close();
+        bbuf.clear();
+        System.out.println("发送完毕:"+new Date());
+        //}
+        System.gc();
+    }
 
 
-        channel.close();
-        connection.close();
+    public AMQP.BasicProperties.Builder getProperties() {
+        return properties;
+    }
+    public ByteBuffer getBbuf() {
+        return bbuf;
     }
 }
