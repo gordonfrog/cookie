@@ -16,6 +16,17 @@
             <version>3.5.3</version>
         </dependency>
 
+
+        <!-- activemq -->
+
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-all</artifactId>
+            <version>5.15.8</version>
+        </dependency>
+
+
+
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
@@ -43,7 +54,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.rabbitmq.RabbitMQProducerDemo</mainClass>
+                                    <mainClass>com.activemq.ActiveMqProducer</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
