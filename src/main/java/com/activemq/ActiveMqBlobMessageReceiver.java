@@ -13,7 +13,7 @@ import javax.jms.Session;
 public class ActiveMqBlobMessageReceiver {
 
     private static final String SUBJECT = "test-activemq-queue";
-    private static String url = "tcp://localhost:61616?jms.blobTransferPolicy.defaultUploadUrl=http://localhost:8161/fileserver/";
+    private static String url = "tcp://localhost:61616?jms.blobTransferPolicy.defaultUploadUrl=http://localhost:8080/fileserver/";
 
     public static void main(String[] args)throws Exception{
 
