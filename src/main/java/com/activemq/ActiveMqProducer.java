@@ -43,7 +43,6 @@ public class ActiveMqProducer {
 
         //初始化连接工厂
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
-
         connectionFactory.setUseCompression(true);
 
         //获得连接
