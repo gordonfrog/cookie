@@ -1,8 +1,5 @@
 package cn.com.business.config;
 
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-
 import javax.jms.*;
 
 public class AmqConfigData {
