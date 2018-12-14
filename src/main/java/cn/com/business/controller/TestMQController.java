@@ -11,9 +11,26 @@ public class TestMQController {
     @Autowired
     private IMessageProducer fileProducer;
 
+    @Autowired
+    private IMessageProducer textProducer;
+
     @RequestMapping(value="testMqSend")
     public String testMqSend(){
-        fileProducer.sendMessage("这是消息内容");
+        fileProducer.sendMessage("");
+        return "success";
+    }
+
+    @RequestMapping(value="textQueue")
+    public String textQueue() throws Exception{
+
+        int i = 0;
+        while(i<100){
+            textProducer.sendMessage("这是消息内容");
+            Thread.sleep(100);
+            i++;
+        }
+
+
         return "success";
     }
 }

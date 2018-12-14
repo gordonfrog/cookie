@@ -2,6 +2,7 @@ package cn.com.business.config;
 
 
 import cn.com.business.producer.FileProducer;
+import cn.com.business.producer.TextProducer;
 import cn.com.business.template.IMessageProducer;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.pool.PooledConnectionFactory;
@@ -10,7 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
-import org.springframework.jms.listener.DefaultMessageListenerContainer;
 
 import javax.jms.DeliveryMode;
 import javax.jms.Session;
@@ -28,6 +28,9 @@ public class ActiveMQConfig {
 
     @Value("${spring.activemq.password}")
     private String password;
+
+    @Value("${business.textQueue}")
+    private String textQueue;
 
     public ActiveMQConnectionFactory activeMQConnectionFactory(){
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(userName,password,url);
@@ -54,6 +57,20 @@ public class ActiveMQConfig {
     }
 
 
+    @Bean("textProducer")
+    public IMessageProducer textProducer(PooledConnectionFactory pooledConnectionFactory) throws Exception{
+        AmqConfigData amqConfigData = new AmqConfigData();
+        amqConfigData.setConnection(pooledConnectionFactory.createConnection());
+        amqConfigData.setIsPersistent(DeliveryMode.PERSISTENT);
+        amqConfigData.setAckownledge(Session.CLIENT_ACKNOWLEDGE);
+        amqConfigData.setMqName(textQueue);
+        IMessageProducer iMessageProducer = new TextProducer(amqConfigData);
+
+        return iMessageProducer;
+    }
+
+
+
     /**
      * 控制 jmslistener连接
      * @param pooledConnectionFactory
@@ -63,6 +80,7 @@ public class ActiveMQConfig {
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(PooledConnectionFactory pooledConnectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory((ActiveMQConnectionFactory)pooledConnectionFactory.getConnectionFactory());
+        //设置消息确认模式 这里设置的是单挑消息确认 由于和spring集成 用client确认模式 会被spring自动确认
         factory.setSessionAcknowledgeMode(4);
         //设置连接数
         factory.setConcurrency("3");
