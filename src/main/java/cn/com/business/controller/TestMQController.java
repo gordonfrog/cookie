@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class TestMQController {
 
-    @Autowired
+    @Autowired(required = false)
     private IMessageProducer fileProducer;
 
-    @Autowired
+    @Autowired(required = false)
     private IMessageProducer textProducer;
 
     @RequestMapping(value="testMqSend")
@@ -23,7 +23,7 @@ public class TestMQController {
     @RequestMapping(value="textQueue")
     public String textQueue() throws Exception{
 
-        int i = 0;
+        int i = 99;
         while(i<100){
             textProducer.sendMessage("这是消息内容");
             Thread.sleep(100);

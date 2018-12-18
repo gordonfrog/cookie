@@ -1,16 +1,16 @@
 package cn.com.business.producer;
 
+import cn.com.business.config.ActiveMQUtil;
 import cn.com.business.config.AmqConfigData;
 import cn.com.business.template.TemplateMessageProducer;
 import org.apache.activemq.command.ActiveMQTextMessage;
 
 import javax.jms.Message;
-import java.util.Date;
 
 public class TextProducer extends TemplateMessageProducer {
 
-    public TextProducer(AmqConfigData amqConfigData){
-        super(amqConfigData);
+    public TextProducer(AmqConfigData amqConfigData,ActiveMQUtil activeMQUtil){
+        super(amqConfigData,activeMQUtil);
     }
 
     public Message handleData(Object data) throws Exception{

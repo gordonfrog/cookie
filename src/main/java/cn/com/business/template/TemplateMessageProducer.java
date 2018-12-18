@@ -1,45 +1,23 @@
 package cn.com.business.template;
 
+import cn.com.business.config.ActiveMQUtil;
 import cn.com.business.config.AmqConfigData;
 
 import javax.jms.*;
+import javax.jms.IllegalStateException;
 
 public class TemplateMessageProducer extends AbstractMessageProducer {
 
     private AmqConfigData amqConfigData;
 
-    private Connection connection;
-
-    private Session session;
-
-    private MessageProducer messageProducer;
-
-    private Destination destination;
-
-    //是否开启事务  默认不开启
-    private boolean openTrancation=false;
-
-    //默认自动确认消息
-    private int ackownledge = Session.AUTO_ACKNOWLEDGE;
-
-    //默认不开启持久化
-    private int isPersistent = DeliveryMode.NON_PERSISTENT;
-
-    //是否topic 默认不是 则为 queue
-    private boolean topic = false;
-
-    //队列或者主题名
-    private String mqName="";
-
+    ActiveMQUtil activeMQUtil;
 
     public TemplateMessageProducer(){
 
     }
 
-
-
-    public TemplateMessageProducer(AmqConfigData amqConfigData){
-        this.amqConfigData = amqConfigData;
+    public TemplateMessageProducer(AmqConfigData amqConfigData, ActiveMQUtil activeMQUtil){
+        this.activeMQUtil = activeMQUtil;
         this.refreshProperties(amqConfigData);
     }
     public boolean sendMessage(Object data) {
@@ -48,38 +26,64 @@ public class TemplateMessageProducer extends AbstractMessageProducer {
             send(message);
             return true;
         }catch (Exception e){
-            e.printStackTrace();
+            System.err.println("sendMessage failed :"+e.getMessage());
             return false;
         }finally {
             afterBusiness();
         }
     }
 
-    public void send(Message message) {
+    public void send(Message message) throws Exception{
         try{
-        this.messageProducer.send(message);
-            if(this.openTrancation){
-                this.session.commit();
+            if(this.amqConfigData.getMessageProducer() == null){
+                throw new JMSException("MessageProducer is null","1111");
+            }
+            this.amqConfigData.getMessageProducer().send(message);
+            if(this.amqConfigData.isOpenTrancation()){
+                this.amqConfigData.getSession().commit();
             }
         }catch (JMSException e){
-            e.printStackTrace();
+            //mq连接曾经可用 所以存在连接池 但是后来activemq连接失败
+            if((e instanceof IllegalStateException && e.getMessage().equals("The producer is closed"))
+                    ||
+                    //mq初始化失败 导致producer是null
+                    "1111".equals(e.getErrorCode())
+                    ){
+                //需要达到效果是 重启mq后 无需重启应用服务器
+                //目前方案缺点 需要不断重试才能发现mq服务是否正常
+                try{
+                    this.refreshConnection();
+                    this.refreshProperties(amqConfigData);
+                    this.amqConfigData.getMessageProducer().send(message);
+                }catch (JMSException jmsException){
+                    System.err.println("retry send error "+jmsException.getMessage());
+                }
+            }else{
+                e.printStackTrace();
+            }
+
+        }finally {
+            if(message != null){
+                message.clearBody();
+            }
         }
     }
 
     public void initData() {
 
-        if(this.connection != null){
+        if(this.amqConfigData.getConnection() != null){
             boolean ok = true;
             try{
-                this.connection.start();
-                this.session = this.connection.createSession(openTrancation,ackownledge);
-                if(this.topic){
-                    this.destination = this.session.createTopic(this.mqName);
+                this.amqConfigData.getConnection().start();
+                this.amqConfigData.setSession(this.amqConfigData.getConnection().createSession(
+                        this.amqConfigData.isOpenTrancation(),this.amqConfigData.getAckownledge()));
+                if(this.amqConfigData.isTopic()){
+                    this.amqConfigData.setDestination(this.amqConfigData.getSession().createTopic(this.amqConfigData.getMqName()));
                 }else{
-                    this.destination = this.session.createQueue(this.mqName);
+                    this.amqConfigData.setDestination(this.amqConfigData.getSession().createQueue(this.amqConfigData.getMqName()));
                 }
-                this.messageProducer = this.session.createProducer(destination);
-                this.messageProducer.setDeliveryMode(this.isPersistent);
+                this.amqConfigData.setMessageProducer(this.amqConfigData.getSession().createProducer(this.amqConfigData.getDestination()));
+                this.amqConfigData.getMessageProducer().setDeliveryMode(this.amqConfigData.getIsPersistent());
             }catch (Exception e){
                 e.printStackTrace();
                 ok = false;
@@ -95,10 +99,10 @@ public class TemplateMessageProducer extends AbstractMessageProducer {
 
     public void afterBusiness() {
         try{
-            if(session != null){
-                session.close();
-            }
 
+            if(!this.amqConfigData.isOpenTrancation() && this.amqConfigData.getSession() != null){
+                this.amqConfigData.getSession().close();
+            }
             //if(connection != null){
             //    connection.stop();
             //}
@@ -112,14 +116,16 @@ public class TemplateMessageProducer extends AbstractMessageProducer {
      */
     public void refreshProperties(AmqConfigData amqConfigData){
         if(amqConfigData != null){
-            this.connection = amqConfigData.getConnection();
-            this.topic = amqConfigData.isTopic();
-            this.isPersistent = amqConfigData.getIsPersistent();
-            this.ackownledge = amqConfigData.getAckownledge();
-            this.mqName = amqConfigData.getMqName();
-            this.openTrancation = amqConfigData.isOpenTrancation();
+            this.amqConfigData = amqConfigData;
             this.initData();
         }
     }
 
+
+    private void refreshConnection() throws JMSException{
+        if(this.amqConfigData.getConnection() != null){
+            this.amqConfigData.getConnection().close();
+        }
+        this.amqConfigData.setConnection(activeMQUtil.getConnection());
+    }
 }

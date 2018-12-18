@@ -1,5 +1,6 @@
 package cn.com.business.producer;
 
+import cn.com.business.config.ActiveMQUtil;
 import cn.com.business.config.AmqConfigData;
 import cn.com.business.template.TemplateMessageProducer;
 import org.apache.activemq.command.ActiveMQBytesMessage;
@@ -13,13 +14,13 @@ import java.util.Date;
 
 public class FileProducer extends TemplateMessageProducer {
 
-    private static String fileName= "D:\\ChromeCoreDownloads\\34278383465125";
+    private static String fileName= "D:\\ChromeCoreDownloads\\apache-activemq-5.15.8-bin";
     private static String fileExt = ".zip";
 
     private ByteBuffer bbuf;
 
-    public FileProducer(AmqConfigData amqConfigData){
-        super(amqConfigData);
+    public FileProducer(AmqConfigData amqConfigData, ActiveMQUtil activeMQUtil){
+        super(amqConfigData,activeMQUtil);
         this.bbuf = ByteBuffer.allocate(1024*1024);
     }
 
@@ -60,9 +61,11 @@ public class FileProducer extends TemplateMessageProducer {
             try{
                 if(fc != null){
                     fc.close();
+                    fc = null;
                 }
                 if(randomAccessFile != null){
                     randomAccessFile.close();
+                    randomAccessFile = null;
                 }
             }catch (Exception ee){
                 ee.printStackTrace();

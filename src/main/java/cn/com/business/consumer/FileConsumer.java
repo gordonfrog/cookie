@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import javax.jms.BytesMessage;
 import javax.jms.Message;
 import javax.jms.Session;
-import javax.jms.TextMessage;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -49,7 +48,7 @@ public class FileConsumer {
                     bytesMessage.clearBody();
                     //手动确认消息
                     message.acknowledge();
-                    System.gc();
+
                     //文件处理休眠2秒
                     Thread.sleep(2 * 1000);
                 } catch (Exception e) {
@@ -59,12 +58,15 @@ public class FileConsumer {
                     }
                     //TODO移交异常日志
                 } finally {
+                    System.gc();
                     try {
                         if (fileChannel != null) {
                             fileChannel.close();
+                            fileChannel = null;
                         }
                         if (randomAccessFile != null) {
                             randomAccessFile.close();
+                            randomAccessFile = null;
                         }
                     } catch (Exception ee) {
                         ee.printStackTrace();
