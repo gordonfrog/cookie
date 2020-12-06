@@ -14,8 +14,8 @@ import java.util.Date;
 
 public class FileProducer extends TemplateMessageProducer {
 
-    private static String fileName= "D:\\ChromeCoreDownloads\\apache-activemq-5.15.8-bin";
-    private static String fileExt = ".zip";
+    private static String fileName= "/Users/williamgordon/Downloads/last-ran";
+    private static String fileExt = ".csv";
 
     private ByteBuffer bbuf;
 
@@ -34,7 +34,7 @@ public class FileProducer extends TemplateMessageProducer {
         try{
                 System.out.println("发送开始:"+new Date());
                 //设置文件生成路径以及名称
-                String targetFileName = "D:\\testMqSendFile\\"+System.nanoTime()+fileExt;
+                String targetFileName = "/Users/williamgordon/Downloads/"+System.nanoTime()+fileExt;
                 int n = 0;
                 randomAccessFile = new RandomAccessFile(new File(fileName+fileExt),"r");
                 fc  = randomAccessFile.getChannel();

@@ -25,7 +25,7 @@ public class TestMQController {
 
         int i = 99;
         while(i<100){
-            textProducer.sendMessage("这是消息内容");
+            textProducer.sendMessage("Hi");
             Thread.sleep(100);
             i++;
         }

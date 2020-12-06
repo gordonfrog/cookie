@@ -22,7 +22,7 @@ public class FileConsumer {
 
     @JmsListener(destination="testMqSpring",containerFactory = "jmsListenerContainerFactory")
     public void receiveMessage(Message message,Session session) {    // 进行消息接收处理
-        System.err.println("【*** 接收消息 ***】");
+        System.err.println("【*** Got it ***】");
         try{
             if(message instanceof BytesMessage) {
                 BytesMessage bytesMessage = (BytesMessage) message;
@@ -43,7 +43,7 @@ public class FileConsumer {
                         bbuf.clear();
                     }
                     bbuf.clear();
-                    System.out.println("结束时间:" + new Date());
+                    System.out.println("Now:" + new Date());
                     System.out.println("threadName:" + Thread.currentThread().getName() + " [x] Received end");
                     bytesMessage.clearBody();
                     //手动确认消息
